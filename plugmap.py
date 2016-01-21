@@ -330,7 +330,7 @@ def main() :
     params["OBSERVED_GUIDE_WAVE"]=5400.
     params["OBSERVED_QSO_WAVE"]=7450. # to study r1/r2
     params["OBSERVED_STAR_WAVE"]=7467.
-    params["OBSERVED_LGR_WAVE"]=7498.
+    params["OBSERVED_LRG_WAVE"]=7498.
     params["OBSERVED_ELG_WAVE"]=7498.
     params["FIBER_LOSS_SIGMA_ARCSEC"]=0.87
     
