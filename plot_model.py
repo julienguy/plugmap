@@ -97,25 +97,29 @@ refrac_arcsec=np.array([44.166347,43.365612,42.8640697818,42.292551282,42.150746
 #distort_wave=np.array([4000,5500,6000,8000,10000])
 #distort_arcsec=np.array([-0.005,0.,0.001,0.004,0.005])/217.*3600 # arcsec
 
-numpy.random.seed(12)
+refwave=5400.
+alt=80.
+pa=-20.
+platescale=217.7358 # mm/deg
+d2r=math.pi/180.
+distortion            = OpticalDistortion(platescale)
+
+numpy.random.seed(2)
 rmax=300.
 n=60
 x=rmax*(2*numpy.random.uniform(size=n)-1.)
 y=rmax*(2*numpy.random.uniform(size=n)-1.)
 r=np.sqrt(x**2+y**2)
-x=x[r<rmax]
-y=y[r<rmax]
-r=r[r<rmax]
+mask=np.where(r<rmax)[0]
+x=x[mask]
+y=y[mask]
+r=r[mask]
 xx=np.linspace(-rmax,rmax,100)
 n=x.size
 
-refwave=5400.
-d2r=math.pi/180.
-alt=85.
-pa=-20.
-platescale=217.7358 
+
 scalefact=3000. # for display
-scale=scalefact/3600.*platescale
+
 pylab.figure(figsize=(8,7.5))
 pylab.plot(x,y,"o",markersize=16,color="white")
 pylab.plot(xx,np.sqrt(rmax**2-xx**2),"-",color="gray")
@@ -124,11 +128,10 @@ pylab.plot(xx,0*xx,"--",color="gray")
 pylab.xlabel("XFOCAL ~ RA")
 pylab.ylabel("YFOCAL ~ Dec")
 
-wave=np.linspace(3600,9000,10)
-adr=np.interp(wave,refrac_wave,refrac_arcsec)-np.interp(refwave,refrac_wave,refrac_arcsec)
-adrx=scale/np.tan(alt*d2r)*adr*np.sin(pa*d2r)
-adry=scale/np.tan(alt*d2r)*adr*np.cos(pa*d2r) 
-distortion            = OpticalDistortion(platescale)
+wave=np.linspace(4000.,7500.,10)
+alpha=np.interp(wave,refrac_wave,refrac_arcsec)-np.interp(refwave,refrac_wave,refrac_arcsec)
+adrx=(scalefact*platescale/3600.)/np.tan(alt*d2r)*alpha*np.sin(pa*d2r)
+adry=(scalefact*platescale/3600.)/np.tan(alt*d2r)*alpha*np.cos(pa*d2r) 
 
 pylab.text(200,-250,"SPECTRO #1",fontsize=16)
 pylab.text(200,+250,"SPECTRO #2",fontsize=16)
