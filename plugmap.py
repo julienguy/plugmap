@@ -158,7 +158,7 @@ def read_plugmap(filename) :
 
 
 class OpticalDistortion() :
-    def __init__(self,platescale,chromatic_distortion_scale=1.) :
+    def __init__(self,platescale) :
 
         self.platescale=platescale # has units
         
@@ -188,9 +188,6 @@ class OpticalDistortion() :
                 [0.,0.003,0.006,0.007,0.008,0.008,0.008,0.008,0.004,-0.006],
                 [0.,0.003,0.006,0.008,0.008,0.009,0.009,0.008,0.004,-0.006],
                 [0.,0.004,0.006,0.008,0.009,0.009,0.009,0.008,0.004,-0.007]])
-        
-        # this is to test the effect, scale=1. by default
-        self.chromatic_distort *= chromatic_distortion_scale
         
         # apply scaling
         scale=np.zeros((nr))
@@ -232,8 +229,8 @@ class OpticalDistortion() :
         dist=np.interp(wavelength,[self.chromatic_distort_wave[i-1],self.chromatic_distort_wave[i]],[dist1,dist2])
         return dist
     
-    def distortion(self,radius,wavelength) : 
-        return self.achromatic_distortion_pol(radius) + self.chromatic_distortion(radius,wavelength)
+    def distortion(self,radius,wavelength,chromatic_distortion_scale=1.) : 
+        return self.achromatic_distortion_pol(radius) + chromatic_distortion_scale*self.chromatic_distortion(radius,wavelength)
 
 
 # same result as idlutils/goddard/pro/astro/hadec2altaz.pro 
@@ -288,7 +285,7 @@ def altaz2xy(alt,az,altcen,azcen,platescale) :
     return rfocal*np.cos(posang),rfocal*np.sin(posang)
 
 
-def hadec2xy(ha,dec,alt0,az0,crot,srot,latitude,platescale,distortion,wavelength) :
+def hadec2xy(ha,dec,alt0,az0,crot,srot,latitude,platescale,distortion,wavelength,chromatic_distortion_scale=1.) :
     alt,az = hadec2altaz(ha,dec,latitude,wavelength)
     x,y    = altaz2xy(alt,az,alt0,az0,platescale)
     rscale = 1
@@ -296,7 +293,7 @@ def hadec2xy(ha,dec,alt0,az0,crot,srot,latitude,platescale,distortion,wavelength
         # Distortion, see ad2xyfocal.pro
         r = np.sqrt(x**2 + y**2)
         if r>0 :
-            rscale = 1+distortion.distortion(r,wavelength)/r
+            rscale = 1+distortion.distortion(r,wavelength,chromatic_distortion_scale)/r
     
     
     # Rotate the focal plane so that +y points towards a point that is offset from
@@ -397,8 +394,9 @@ def main() :
     # optical distortion
     # from platedesign/trunk/pro/plate/get_platescale.pro
     platescale = 217.7358 
-    distortion            = OpticalDistortion(platescale,chromatic_distortion_scale=params["CHROMATIC_DISTORTION_SCALE"])
-
+    distortion            = OpticalDistortion(platescale)
+    chromatic_distortion_scale = params["CHROMATIC_DISTORTION_SCALE"]
+    
     # only reference for wavelength 5400A I could find is in code platedesign/trunk/pro/plate/adr.pro    
     lrg=np.where(objects["OBJECT"]=="GALAXY")[0]
     elg=np.where(objects["OBJECT"]=="NA")[0] # it's sad ...
@@ -460,7 +458,7 @@ def main() :
         alt_design[o]=alt
         az_design[o]=az
 
-        x,y,alt,az    = hadec2xy(ha_obs-(ra[o]-ra0),dec[o],alt0_obs,az0_obs,crot_obs,srot_obs,latitude,platescale,distortion,wave_obs[o])
+        x,y,alt,az    = hadec2xy(ha_obs-(ra[o]-ra0),dec[o],alt0_obs,az0_obs,crot_obs,srot_obs,latitude,platescale,distortion,wave_obs[o],chromatic_distortion_scale)
         xobs[o]=x
         yobs[o]=y
         alt_obs[o]=alt
