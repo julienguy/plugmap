@@ -158,7 +158,7 @@ def read_plugmap(filename) :
 
 
 class OpticalDistortion() :
-    def __init__(self,platescale) :
+    def __init__(self,platescale,chromatic_distortion_scale=1.) :
 
         self.platescale=platescale # has units
         
@@ -188,6 +188,9 @@ class OpticalDistortion() :
                 [0.,0.003,0.006,0.007,0.008,0.008,0.008,0.008,0.004,-0.006],
                 [0.,0.003,0.006,0.008,0.008,0.009,0.009,0.008,0.004,-0.006],
                 [0.,0.004,0.006,0.008,0.009,0.009,0.009,0.008,0.004,-0.007]])
+        
+        # this is to test the effect, scale=1. by default
+        self.chromatic_distort *= chromatic_distortion_scale
         
         # apply scaling
         scale=np.zeros((nr))
@@ -333,6 +336,7 @@ def main() :
     params["OBSERVED_LRG_WAVE"]=7498.
     params["OBSERVED_ELG_WAVE"]=7498.
     params["FIBER_LOSS_SIGMA_ARCSEC"]=0.87
+    params["CHROMATIC_DISTORTION_SCALE"]=1.
     
     # read configuration file
     if args.config is not None :
@@ -393,7 +397,7 @@ def main() :
     # optical distortion
     # from platedesign/trunk/pro/plate/get_platescale.pro
     platescale = 217.7358 
-    distortion            = OpticalDistortion(platescale)
+    distortion            = OpticalDistortion(platescale,chromatic_distortion_scale=params["CHROMATIC_DISTORTION_SCALE"])
 
     # only reference for wavelength 5400A I could find is in code platedesign/trunk/pro/plate/adr.pro    
     lrg=np.where(objects["OBJECT"]=="GALAXY")[0]
