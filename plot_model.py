@@ -126,8 +126,8 @@ pylab.ylabel("YFOCAL ~ Dec")
 
 wave=np.linspace(3600,9000,10)
 adr=np.interp(wave,refrac_wave,refrac_arcsec)-np.interp(refwave,refrac_wave,refrac_arcsec)
-adrx=-scale/np.tan(alt*d2r)*adr*np.sin(pa*d2r)
-adry=-scale/np.tan(alt*d2r)*adr*np.cos(pa*d2r) 
+adrx=scale/np.tan(alt*d2r)*adr*np.sin(pa*d2r)
+adry=scale/np.tan(alt*d2r)*adr*np.cos(pa*d2r) 
 distortion            = OpticalDistortion(platescale)
 
 pylab.text(200,-250,"SPECTRO #1",fontsize=16)
@@ -138,23 +138,27 @@ pylab.arrow(rmax*np.sin(pa*d2r), rmax*np.cos(pa*d2r), rmax*np.sin(pa*d2r)*0.1, r
 pylab.text(0,rmax*1.25,"North",horizontalalignment='center', fontsize=16)
 pylab.text(rmax*1.25*np.sin(pa*d2r),rmax*1.25*np.cos(pa*d2r),"Zenith",horizontalalignment='center', fontsize=16)
 
+colors=[]
+for w in range(wave.size) :
+    colors.append(pylab.cm.RdYlBu(float(wave.size-w)/wave.size))
+
 if what==0 :
     for w in range(wave.size) :
-        pylab.plot(x+adrx[w],y+adry[w],"o",markersize=8,color=pylab.cm.RdYlBu(float(w+0.5)/wave.size),markeredgewidth=0)
+        pylab.plot(x+adrx[w],y+adry[w],"o",markersize=8,color=colors[w],markeredgewidth=0)
 if what==1 :
     for w in range(wave.size) :
         rscale = np.zeros((n))
         for i in range(n) :
             rscale[i]=1.+scalefact*(distortion.distortion(r[i],wave[w])-distortion.distortion(r[i],refwave))/r[i]
         
-        pylab.plot(x*rscale,y*rscale,"o",markersize=8,color=pylab.cm.RdYlBu(float(w+0.5)/wave.size),markeredgewidth=0)
+        pylab.plot(x*rscale,y*rscale,"o",markersize=8,color=colors[w],markeredgewidth=0)
 if what==2 :
     for w in range(wave.size) :
         rscale = np.zeros((n))
         for i in range(n) :
             rscale[i]=1.+scalefact*(distortion.distortion(r[i],wave[w])-distortion.distortion(r[i],refwave))/r[i]
         
-        pylab.plot(x*rscale+adrx[w],y*rscale+adry[w],"o",markersize=8,color=pylab.cm.RdYlBu(float(w+0.5)/wave.size),markeredgewidth=0)
+        pylab.plot(x*rscale+adrx[w],y*rscale+adry[w],"o",markersize=8,color=colors[w],markeredgewidth=0)
 
 rscale=1.5
 pylab.xlim([-rscale*rmax,rscale*rmax])
