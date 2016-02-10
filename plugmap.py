@@ -340,7 +340,12 @@ def main() :
         file=open(args.config)
         for line in file.readlines() :
             vals=line.strip().split(" ")
-            params[vals[0]]=string.atof(vals[1])
+            nvals=[]
+            for v in vals :
+                if len(v)>0 :
+                    nvals.append(v)
+            if len(nvals)>=2 :
+                params[nvals[0]]=string.atof(nvals[1])
         file.close()
 
     if args.oha is not None :
