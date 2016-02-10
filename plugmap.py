@@ -477,8 +477,78 @@ def main() :
     file.write("#RESULT RMS_PY-IDL_OFFSET_ARCSEC %f\n"%np.std(dr0))
     
     # compute spectro ratio
-    dx=xobs-xdesign-np.mean(xobs[guide]-xdesign[guide])
-    dy=yobs-ydesign-np.mean(yobs[guide]-ydesign[guide])
+
+    # test 
+    if False :
+        print "testing the code"
+        angle=5./180.*math.pi
+        scale=0.05
+        xshift=0.2*(platescale/3600.)  # mm
+        yshift=-0.1*(platescale/3600.) # mm
+        ca=math.cos(angle)
+        sa=math.sin(angle)
+        xobs=(1.+scale)*(ca*xdesign-sa*ydesign)+xshift
+        yobs=(1.+scale)*(sa*xdesign+ca*ydesign)+yshift
+    
+    # 4 parameters : 2 shifts, 1 angle, 1 scale
+    xder=np.zeros((4,xobs.size))
+    yder=np.zeros((4,yobs.size))
+
+    # model : 
+    # dx= xobs - [ (1.+scale)*(ca*xdesign-sa*ydesign)+xshift ]
+    # dy= yobs - [ (1.+scale)*(-sa*xdesign+ca*ydesign)+yshift ]
+    mm2arcsec = 3600./platescale
+    xshift=np.mean(xobs[guide]-xdesign[guide])
+    yshift=np.mean(yobs[guide]-ydesign[guide])
+    print "starting with xshift=%f arcsec, yshift=%f arcsec"%(xshift*mm2arcsec,yshift*mm2arcsec)
+    angle=0.
+    scale=0.
+    ca=1.
+    sa=0.
+    dx= xobs - ( (1.+scale)*(ca*xdesign-sa*ydesign)+xshift )
+    dy= yobs - ( (1.+scale)*(sa*xdesign+ca*ydesign)+yshift )
+    chi2=1e12
+    for loop in range(100) :
+                
+        xder[0]=1. # xshift
+        xder[1]=0. # yshift
+        xder[2]=(1.+scale)*(-sa*xdesign-ca*ydesign) # angle
+        xder[3]= (ca*xdesign-sa*ydesign)# scale
+        
+        
+        yder[0]=0. # xshift
+        yder[1]=1. # yshift
+        yder[2]=(1.+scale)*(ca*xdesign-sa*ydesign) # angle
+        yder[3]=(-sa*xdesign+ca*ydesign) # scale
+        
+        w=1./(0.01/3600.*platescale)**2 # mm-2 , target error = 10 marcsec    
+        A=np.zeros((4,4))
+        B=np.zeros((4))
+        for i in guide :
+            A += w*( np.outer(xder[:,i],xder[:,i]) + np.outer(yder[:,i],yder[:,i]) )
+            B += w*( dx[i]*xder[:,i] + dy[i]*yder[:,i] )
+        Ai=np.linalg.inv(A)
+        X=Ai.dot(B)
+        
+        # update
+        xshift+=X[0] # mm
+        yshift+=X[1] # mm
+        angle+=X[2] # rad
+        scale+=X[3] # scale
+        
+        ca=math.cos(angle)
+        sa=math.sin(angle)
+        dx= xobs - ( (1.+scale)*(ca*xdesign-sa*ydesign)+xshift )
+        dy= yobs - ( (1.+scale)*(sa*xdesign+ca*ydesign)+yshift )
+        
+        previous_chi2=chi2
+        chi2=np.sum(w*dx[guide]**2)+np.sum(w*dy[guide]**2)
+        ndata=2*guide.size
+        dchi2=previous_chi2-chi2
+        print 'loop %d xshift=%f" yshift=%f" angle=%f deg scale=%f chi2/ndata=%f dchi2=%f'%(loop,xshift*mm2arcsec,yshift*mm2arcsec,angle*180/math.pi,scale,chi2/ndata,dchi2)
+        if abs(dchi2)<0.01 :
+            break
+    
     dr=np.sqrt(dx**2+dy**2)/platescale*3600. # arsec
     dflux=np.exp(-dr**2/2./params["FIBER_LOSS_SIGMA_ARCSEC"]**2)
     print "mean rms dr= %s %s arsec"%(np.mean(dr),np.std(dr))
